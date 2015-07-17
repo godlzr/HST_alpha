@@ -1,3 +1,13 @@
+/*
+ *
+ * Author: Zhongrui Li
+ * Supervisor: Wonsook Lee
+ * zli109@uottawa.ca, wslee@uottawa.ca
+ * EECS, Faculty of Engineering, University of Ottawa, Canada
+ *
+ * Date: March 20th, 2015
+ *
+ */
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "mainwindow.h"
@@ -40,9 +50,8 @@ void MainWindow::on_actionOpen_triggered()
         std::string name = code->fromUnicode(filename).data();
         
         //read image using cv::imread()
-        cv_img_controller.oringinal_img = cv::imread(name);
-        
-        if(!cv_img_controller.oringinal_img.data)
+        cv_img_controller.oringinal_img_RGB = cv::imread(name);
+        if(!cv_img_controller.oringinal_img_RGB.data)
         {
             QMessageBox msgBox;
             msgBox.setText(tr("Cannot open the image!"));
@@ -50,7 +59,7 @@ void MainWindow::on_actionOpen_triggered()
         }
         else
         {
-            cv::cvtColor(cv_img_controller.oringinal_img,cv_img_controller.oringinal_img,CV_BGR2RGB);
+            cv::cvtColor(cv_img_controller.oringinal_img_RGB,cv_img_controller.oringinal_img,CV_BGR2RGB);
             
             q_displayed_img = QImage((const unsigned char*)(cv_img_controller.oringinal_img.data),cv_img_controller.oringinal_img.cols,cv_img_controller.oringinal_img.rows, cv_img_controller.oringinal_img.cols*cv_img_controller.oringinal_img.channels(),  QImage::Format_RGB888);
             
@@ -178,7 +187,6 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
                                                             cv_img_controller.cropped_img.rows,
                                                             cv_img_controller.cropped_img.step,
                                                             QImage::Format_RGB888);
-            
             q_displayed_img = cropped;
             img_view_controller.cropRect.reset();
             img_view_controller.is_cropping = false;
@@ -238,7 +246,8 @@ void MainWindow::on_pushButton_clicked()
         }
         else
         {
-            cv_HSV_img = cv_img_controller.ConvertRgbToHsv(cv_img_controller.cropped_img);
+            Mat tmp_cropped_img = cv_img_controller.cropped_img.clone();
+            cv_HSV_img = cv_img_controller.ConvertRgbToHsv(tmp_cropped_img);
             
             QImage qHsvImg = img_view_controller.ConvertMatToQImage(cv_HSV_img);
             
@@ -274,11 +283,12 @@ void MainWindow::on_enhancedGaborFilterButton_clicked()
     if(cv_gabor_img.empty())
         QMessageBox::about(this,tr("Warning!"),tr("You can't use enhanced gabor filter at this time!"));
     else
+    {
         cv_enhanced_gabor_img = cv_img_controller.EnhancedGaborFilter();
-    QImage qEnhancedGaborImg = img_view_controller.ConvertMatToQImage(cv_enhanced_gabor_img);
-    q_displayed_img = qEnhancedGaborImg;
-    this->update();
-    
+        QImage qEnhancedGaborImg = img_view_controller.ConvertMatToQImage(cv_enhanced_gabor_img);
+        q_displayed_img = qEnhancedGaborImg;
+        this->update();
+    }
 }
 
 void MainWindow::on_imageErosionButton_clicked()
@@ -286,13 +296,69 @@ void MainWindow::on_imageErosionButton_clicked()
     if(cv_enhanced_gabor_img.empty())
         QMessageBox::about(this,tr("Warning!"),tr("You can't erode the image at this time!"));
     else
+    {
         cv_eroded_img = cv_img_controller.ErodeImage();
-    QImage qErodedImg = img_view_controller.ConvertMatToQImage(cv_eroded_img);
-    q_displayed_img = qErodedImg;
-    this->update();
+        QImage qErodedImg = img_view_controller.ConvertMatToQImage(cv_eroded_img);
+        q_displayed_img = qErodedImg;
+        this->update();
+    }
 }
 
 void MainWindow::on_strandsAnalysisButton_clicked()
 {
-    cv_img_controller.StrandsAnalysis();
+    if(cv_eroded_img.empty())
+        QMessageBox::about(this,tr("Warning!"),tr("Can't analysis strands at this time!"));
+    else
+    {
+        cv_blend_curves_img = cv_img_controller.StrandsAnalysis();
+        QImage qBlendCurvesImg = img_view_controller.ConvertMatToQImage(cv_blend_curves_img);
+        q_displayed_img = qBlendCurvesImg;
+        this->update();
+    }
+    
+
+}
+
+// Strand Extend Button
+void MainWindow::on_pushButton_4_clicked()
+{
+    if(cv_blend_curves_img.empty())
+        QMessageBox::about(this,tr("Warning!"),tr("Can't connect strands at this time!"));
+    else
+    {
+        cv_connect_curves_img = cv_img_controller.StrandsEnxtendAndConnection();
+        QImage qConnectCurvesImg = img_view_controller.ConvertMatToQImage(cv_connect_curves_img);
+        q_displayed_img = qConnectCurvesImg;
+        this->update();
+    }
+    
+}
+// Median Filter Button
+void MainWindow::on_pushButton_5_clicked()
+{
+    if(cv_connect_curves_img.empty())
+        QMessageBox::about(this,tr("Warning!"),tr("Can't use median filter at this time!"));
+    else
+    {
+        cv_filter_curves_img = cv_img_controller.MedianFilter();
+        QImage qFilteredCurvesImg = img_view_controller.ConvertMatToQImage(cv_filter_curves_img);
+        q_displayed_img = qFilteredCurvesImg;
+        this->update();
+    }
+}
+
+void MainWindow::on_Export_CtrlPts_Button_clicked()
+{
+    if(cv_filter_curves_img.empty())
+        QMessageBox::about(this,tr("Warning!"),tr("No data to save right now!"));
+    else
+    {
+        QString filename = QFileDialog::getSaveFileName(this,tr("Save Data"),"../Strand_ControlPoint_Data.txt",tr("Image File(*.txt)"));
+        char* filepath = new char[filename.length() + 1];
+        strcpy(filepath, filename.toLatin1().constData());
+        if(cv_img_controller.ExportControlPoints(filepath))
+            QMessageBox::about(this,tr("Great!"),tr("Save Data Successfully!"));
+        else
+            QMessageBox::about(this,tr("Fail!"),tr("Can not save the data!"));
+    }
 }

@@ -24,6 +24,8 @@ class CVImage
 public:
     Mat oringinal_img;// The original image;
 
+    Mat oringinal_img_RGB;
+    
     CvRect crop_rect;
 
     Mat cropped_img;
@@ -37,6 +39,8 @@ public:
     strandsOperator strOpt;
 
     CVImage();
+    
+    Mat s_Chanel_Hsv_Img;
 
     Mat gabor_filter_resp;
     
@@ -45,6 +49,9 @@ public:
     Mat enhanced_gabor_img;
     
     Mat eroded_img;
+    
+    Mat curves_img;
+    
     // crop the original image
     Mat CroppingImage(Mat _originalImg, CvRect _cpRect);
 
@@ -57,7 +64,13 @@ public:
     
     Mat ErodeImage();
     
-    void StrandsAnalysis();
+    Mat StrandsAnalysis();
+    
+    Mat StrandsEnxtendAndConnection();
+    
+    Mat MedianFilter();
+    
+    bool ExportControlPoints(char * filepath);
 
 };
 

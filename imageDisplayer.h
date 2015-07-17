@@ -1,10 +1,15 @@
 //
 //  imageDisplayer.h
-//  test
-//
-//  Created by  Zhongrui Li on 2015-06-24.
-//
-//
+/*
+ *
+ * Author: Zhongrui Li
+ * Supervisor: Wonsook Lee
+ * zli109@uottawa.ca, wslee@uottawa.ca
+ * EECS, Faculty of Engineering, University of Ottawa, Canada
+ *
+ * Date: March 20th, 2015
+ *
+ */
 
 #ifndef __test__imageDisplayer__
 #define __test__imageDisplayer__

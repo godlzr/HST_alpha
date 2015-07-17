@@ -1,21 +1,33 @@
 //
 //  strandsOperator.cpp
-//  test
-//
-//  Created by  Zhongrui Li on 2015-07-08.
-//
-//
+/*
+ *
+ * Author: Zhongrui Li
+ * Supervisor: Wonsook Lee
+ * zli109@uottawa.ca, wslee@uottawa.ca
+ * EECS, Faculty of Engineering, University of Ottawa, Canada
+ *
+ * Date: March 20th, 2015
+ *
+ */
 
 #include "strandsOperator.h"
-#include <cvblob.h>
 
-using namespace cvb;
+static bool point_comparator(const cv::Point2f &a, const cv::Point2f &b);
+static bool point_equal(const cv::Point2f &a, const cv::Point2f &b);
+static Scalar randomColor( RNG& rng );
 strandsOperator::strandsOperator()
 {
     
 }
-void strandsOperator::StrandsAnalysis(const Mat & _imgErosion)
+static Scalar randomColor( RNG& rng )
 {
+    int icolor = (unsigned) rng;
+    return Scalar( icolor&255, (icolor>>8)&255, (icolor>>16)&255 );
+}
+Mat strandsOperator::StrandsAnalysis(const Mat & _imgErosion)
+{
+    input_img = _imgErosion.clone();
     vector<Point2f> bifPts;
     bifPts = DetectBifuPoints(_imgErosion);
     
@@ -31,7 +43,19 @@ void strandsOperator::StrandsAnalysis(const Mat & _imgErosion)
     vector<vector<Point2f> > lines;
     lines = TrackLineSegments(imgWithoutSinglePts, endPts);
     
-    RemoveShortLines(lines, 50);
+    int lineLengthThreshold = 50;
+    RemoveShortLines(lines, lineLengthThreshold);
+    
+    //DuplicateCheck(lines);
+    
+    // Get the control point of each spline curve
+    int ctrlPtsNum = 7;
+    
+    ctrlPts = spCtr.GetCtrlPtsFromEachLines(lines, ctrlPtsNum );
+    
+    // Create Color strands
+    Mat curvesImg = DrawCurvesImg(_imgErosion, ctrlPts);
+    return curvesImg;
 }
 //
 vector<Point2f> strandsOperator::DetectBifuPoints(const Mat & _imgErosion)
@@ -190,14 +214,22 @@ vector<vector<Point2f> > strandsOperator::TrackLineSegments(const Mat & _img, ve
                 endPtN = lineSegments.at(n).back();
                 if(startPtM == endPtN && endPtM == startPtN)
                 {
-                    std::vector<vector<Point2f> >::const_iterator it = lineSegments.begin()+n;
-                    lineSegments.erase(it);
-                    n--;
+                    if(startPtM.y > endPtM.y)
+                        lineSegments.at(m).clear();
+                    else
+                        lineSegments.at(n).clear();
                 }
             }
         }
     }
-
+    for(int i = 0 ; i <(int)lineSegments.size(); i++)
+    {
+        if(lineSegments.at(1).empty())
+        {
+            std::vector<vector<Point2f> >::const_iterator it = lineSegments.begin()+i;
+            lineSegments.erase(it);
+        }
+    }
     return lineSegments;
 }
 
@@ -304,6 +336,7 @@ void strandsOperator::LinesTrace(const Mat & _img, Point2f endPt, vector<Point2f
                     img.at<double>(_line.at(loop).y, _line.at(loop).x - 1) = 0;
                 }
             }
+            img.at<double>(_line.at(loop).y, _line.at(loop).x) = 0;
             loop++;
             if(loop >= prev_size)
                 break;
@@ -319,11 +352,89 @@ void strandsOperator::RemoveShortLines(vector< vector<Point2f> > & _lines, int _
 {
     for(int i = 0; i < (int)_lines.size(); i++)
     {
-        if((int)_lines.at(i).size() > _lineLengthThreshold)
+        if((int)_lines.at(i).size() < _lineLengthThreshold)
         {
             std::vector<vector<Point2f> >::const_iterator it = _lines.begin()+i;
             _lines.erase(it);
             i--;
         }
     }
+}
+/************************************************************************/
+void strandsOperator::DuplicateCheck(vector< vector<Point2f> > & _lines)
+{
+    vector<Point2f> * tmpLine;
+    for(int i = 0; i < (int)_lines.size(); i++)
+    {
+        tmpLine = &_lines.at(i);
+        std::sort(tmpLine->begin(), tmpLine->end(), point_comparator);
+        vector<Point2f>::iterator pos;
+        pos = unique(tmpLine->begin(), tmpLine->end(), point_equal);
+        tmpLine->erase(pos, tmpLine->end());
+    }
+}
+
+static bool point_comparator(const cv::Point2f &a, const cv::Point2f &b) {
+    return (a.x < b.x);
+}
+static bool point_equal(const cv::Point2f &a, const cv::Point2f &b) {
+    return (a.x == b.x && a.y == b.y);
+}
+/************************************************************************/
+
+// Function draw an color image of the spline curves based on the control points
+Mat strandsOperator::DrawCurvesImg(const Mat & _img,vector<vector<Point2f> > & _ctrlPts)
+{
+    // Create Color strands
+    Mat curvesImg(_img.rows, _img.cols, CV_64FC3, Scalar(0,0,0));
+    
+    RNG rng( 0xFFFFFFFF );
+    for(int i =0; i< (int)_ctrlPts.size(); i++)
+    {
+        Scalar color =randomColor(rng);
+        for(int j = 0; j<(int)_ctrlPts.at(i).size()-1; j++)
+        {
+            line( curvesImg, _ctrlPts.at(i).at(j), _ctrlPts.at(i).at(j+1), color,  2, 8 );
+        }
+    };
+    return curvesImg;
+}
+
+// Function removes the duplicate pixel of a line
+vector<vector<Point2f> > strandsOperator::ExtendAndConnectSplines(double ExtensionParameter, int connectionThreshold, int newCtrlPtsNum, int maximumIterlation, int connectionThresholdIncrease)
+{
+    vector<vector<Point2f> > extendedCtrlPts;
+    vector<vector<Point2f> > newCtrlPts = ctrlPts;
+    int length = 0;
+    Mat connectImg;
+    while(maximumIterlation != 0 && length != (int)newCtrlPts.size())
+    {
+        length = (int)newCtrlPts.size();
+        spCtr.SplinesExtension(newCtrlPts, ExtensionParameter, extendedCtrlPts);
+        connectImg = DrawCurvesImg(input_img, extendedCtrlPts);
+        
+        spCtr.ConnectSpline2D(extendedCtrlPts, connectionThreshold, newCtrlPtsNum, newCtrlPts);
+        
+        maximumIterlation--;
+        
+        connectionThreshold = connectionThreshold + connectionThresholdIncrease;
+        
+        connectImg = DrawCurvesImg(input_img, newCtrlPts);
+    }
+    curCurves = newCtrlPts;
+    return newCtrlPts;
+}
+
+/*Median Filter*/
+Mat strandsOperator::MedianFilter(int windowLength)
+{
+    vector<vector<Point2f> > filteredCurves;
+    spCtr.MedianFilter(curCurves, windowLength, filteredCurves);
+    curCurves = filteredCurves;
+    return DrawCurvesImg(input_img, filteredCurves);
+}
+
+bool strandsOperator::ExportCtrlPts(char * filepath)
+{
+    return spCtr.ExportCtrlPts(curCurves, filepath);
 }

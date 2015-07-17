@@ -1,3 +1,13 @@
+/*
+ *
+ * Author: Zhongrui Li
+ * Supervisor: Wonsook Lee
+ * zli109@uottawa.ca, wslee@uottawa.ca
+ * EECS, Faculty of Engineering, University of Ottawa, Canada
+ *
+ * Date: March 20th, 2015
+ *
+ */
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 #include "cv.h"
@@ -33,6 +43,12 @@ public:
     cv::Mat cv_enhanced_gabor_img;
     
     cv::Mat cv_eroded_img;
+    
+    cv::Mat cv_blend_curves_img;
+    
+    cv::Mat cv_connect_curves_img;
+    
+    cv::Mat cv_filter_curves_img;
 
     bool is_start_cropping;//flag for start cropping image
 
@@ -72,6 +88,12 @@ private slots:
     void on_imageErosionButton_clicked();
 
     void on_strandsAnalysisButton_clicked();
+
+    void on_pushButton_4_clicked();
+
+    void on_pushButton_5_clicked();
+
+    void on_Export_CtrlPts_Button_clicked();
 
 private:
     

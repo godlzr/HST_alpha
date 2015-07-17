@@ -1,3 +1,14 @@
+
+/*
+ *
+ * Author: Zhongrui Li
+ * Supervisor: Wonsook Lee
+ * zli109@uottawa.ca, wslee@uottawa.ca
+ * EECS, Faculty of Engineering, University of Ottawa, Canada
+ *
+ * Date: March 20th, 2015
+ *
+ */
 #ifndef GABOR_H
 /*
  The function hierarchy diagram
