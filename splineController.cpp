@@ -383,7 +383,7 @@ void splineController::MedianFilter(vector<vector<Point2f> > & _ctrlPts, int win
     }
 }
 
-bool splineController::ExportCtrlPts(vector<vector<Point2f> > & _ctrlPts,char * filepath)
+bool splineController::ExportCtrlPts(vector<vector<Point2f> > & _ctrlPts,char * filepath, CvRect crop_rect)
 {
     ofstream outfile;
     outfile.open(filepath);     if(outfile.is_open())
@@ -393,7 +393,7 @@ bool splineController::ExportCtrlPts(vector<vector<Point2f> > & _ctrlPts,char * 
             outfile<<"*"<<i+1<<"********************************"<<endl;
             for(int j = 0; j<(int)_ctrlPts.at(i).size(); j++)
             {
-                outfile<<(float)_ctrlPts.at(i).at(j).x<<","<<(float)_ctrlPts.at(i).at(j).y<<endl;
+                outfile<<(float)_ctrlPts.at(i).at(j).x + crop_rect.x<<","<<(float)_ctrlPts.at(i).at(j).y + crop_rect.y<<endl;
             }
         }
         

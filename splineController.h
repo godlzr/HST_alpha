@@ -100,6 +100,6 @@ public:
     */
     void MedianFilter(vector<vector<Point2f> > & _ctrlPts, int windowLength,vector<vector<Point2f> > & _filteredCurves);
     
-    bool ExportCtrlPts(vector<vector<Point2f> > & _ctrlPts,char * filepath);
+    bool ExportCtrlPts(vector<vector<Point2f> > & _ctrlPts,char * filepath, CvRect crop_rect);
 };
 #endif/* defined(__test__splineController__) */

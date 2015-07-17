@@ -140,6 +140,6 @@ public:
     /*Median Filter*/
     Mat MedianFilter(int windowLength);
     
-    bool ExportCtrlPts(char * filepath);
+    bool ExportCtrlPts(char * filepath, CvRect crop_rect);
 };
 #endif /* defined(__test__strandsOperator__) */

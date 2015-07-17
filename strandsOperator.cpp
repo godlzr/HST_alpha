@@ -434,7 +434,7 @@ Mat strandsOperator::MedianFilter(int windowLength)
     return DrawCurvesImg(input_img, filteredCurves);
 }
 
-bool strandsOperator::ExportCtrlPts(char * filepath)
+bool strandsOperator::ExportCtrlPts(char * filepath, CvRect crop_rect)
 {
-    return spCtr.ExportCtrlPts(curCurves, filepath);
+    return spCtr.ExportCtrlPts(curCurves, filepath, crop_rect);
 }

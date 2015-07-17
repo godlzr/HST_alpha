@@ -144,5 +144,5 @@ Mat CVImage::MedianFilter()
 
 bool CVImage::ExportControlPoints(char * filepath)
 {
-    return strOpt.ExportCtrlPts(filepath);
+    return strOpt.ExportCtrlPts(filepath, crop_rect);
 }
